@@ -1,4 +1,0 @@
-1. Srl is a shift right logical which fill the bits to the right and replaces the shifted out bits with 0s. Sra is the shift right arithmetic and sign extends the sign bits with either 1s or 0s. MIPS does not have a Sla because it would have the same function as the sll becuase you would always be feeling in with 0s.
-2. The shifter will have an input labeled i_arithmetic. 'i_arithmetic would be connected to a 2:1 multilplexer which would select either '0' or the sign bit as the value to be used to 'fill-in'.
-3. Shift Left can be implemented by reversing the original input, shifting right, then reversing the resulting output.
-4. 

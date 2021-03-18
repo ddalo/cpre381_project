@@ -44,7 +44,7 @@ architecture structural of fetch_n is
 
 	component addC is
 	generic(N : integer := 32);
-	    port(iCLK             : in std_logic;
+	    port(
       		 iA               : in std_logic_vector(N-1 downto 0);	--vector to add
        		 iB               : in integer;				--integer constant 
       		 oA               : out std_logic_vector(N-1 downto 0));	--output
@@ -66,15 +66,15 @@ architecture structural of fetch_n is
 	
 	component addV is
   	generic(N : integer := 32);
-  	port(iCLK             : in std_logic;
-       	iA               : in std_logic_vector(N-1 downto 0);  --first vector
-       	iB               : in std_logic_vector(N-1 downto 28);	--second vector 
+  	port(
+       	iA               : in std_logic_vector(27 downto 0);  --first vector
+       	iB               : in std_logic_vector(3 downto 0);	--second vector 
        	oC               : out std_logic_vector(N-1 downto 0)); --concat output
 
 	end component;
-signal s_N 	: std_logic_vector(N-1 downto 0);
-signal s_T 	: std_logic_vector(27 downto 0);
-signal s_R	: std_logic_vector(25 downto 0);
+signal s_N 	: std_logic_vector(N-1 downto 0); --the shifted jump address value
+signal s_T 	: std_logic_vector(27 downto 0); -- jump SL output 28bits wide
+signal s_R	: std_logic_vector(25 downto 0); --instruction memory 25-0
 signal s_X	: std_logic_vector(N-1 downto 0);
 signal s_Y	: std_logic_vector(N-1 downto 0);
 signal s_Z	: std_logic_vector(N-1 downto 0);
@@ -87,47 +87,45 @@ constant C : integer := 4;
 
 begin
 
-g_Reg1: registerN
+g_Reg1: registerN --.
 	port MAP(iRST => iRST,
 		 iLD => iLD,
 		 iCLK => iCLK,
 		 iA => s_X,
 		 oA => s_Y);
-g_Add1: addC
-	port MAP(iCLK => iCLK,
-		 iA => s_Y,
+g_Add1: addC --.
+	port MAP(iA => s_Y,
 		 iB => C,
 		 oA => s_Z);
-g_Shift1: shiftleft
-	port MAP(iA => s_R,
+g_Shift1: shiftleft --jump address SL  --.
+	port MAP(iA => s_R(25 downto 0),
 		 oA => s_T);
-g_addV: addV
-	port MAP(iCLK => iCLK,
-		 iA => s_N,
-		 iB => s_Z,
-		 oC => s_T);
-g_Shift2: shiftleft
+g_addV: addV --.
+	port MAP(iA => s_T,
+		 iB => s_Z(31 downto 28),
+		 oC => s_N);
+g_Shift2: shiftleft --fadder SL --.
 	port MAP(iA => iIns,
 		 oA => s_F);
-g_Add2: fadderN
+g_Add2: fadderN --.
 	port MAP(A => s_Z,
 		 B => s_F,
 		 C => '0',
 		 S => s_U,
 		 E => s_E);
-g_And1: andg2
+g_And1: andg2 --.
 	port MAP(i_A => iB,
 		 i_B => iZ,
 		 o_F => s_O);
-g_Mux1: mux2t1_N
+g_Mux1: mux2t1_N --.
 	port MAP(i_S => s_O,
 		 i_D0 => s_Z,
 		 i_D1 => s_U,
 		 o_O => s_M);
-g_Mux2: mux2t1_N
+g_Mux2: mux2t1_N  --.
 	port MAP(i_S => iJ,
 		 i_D0 => s_M,
-		 i_D1 => s_T,
+		 i_D1 => s_N,
 		 o_O => s_X);
 
 end structural;

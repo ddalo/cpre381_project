@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
+use IEEE.std_logic_unsigned.all;
 
 entity addC is
   generic(N : integer := 32);
@@ -12,12 +13,8 @@ end addC;
 
 architecture behavior of addC is
 begin
-
-  process(iCLK, iA, iB)
-  begin
-    if rising_edge(iCLK) then
-	   oA <= iA + iB;
-    end if;
-  end process;
+  
+ 	oA <= iA + iB;
+ 
   
 end behavior;

@@ -74,9 +74,36 @@ architecture structure of MIPS_Processor is
 			o_Data1	: out std_logic_vector(31 downto 0);
 			o_Data2	: out std_logic_vector(31 downto 0));
 	end component;
+	
+	component alu is
+		port (
+		  CLK			: in std_logic;
+		  i_Data1		: in std_logic_vector(31 downto 0);
+		  i_Data2		: in std_logic_vector(31 downto 0);
+		  i_ALU_CTRL	: in std_logic_vector(8 downto 0);
+		  o_Zero		: out std_logic;
+		  o_ALURslt		: out std_logic_vector(31 downto 0);
+		  o_Overflow	: out std_logic);
+	end component;
+	
+	component mux2t1_N is
+		generic(N : integer := 16); -- Generic of type integer for input/output data width. Default value is 32.
+		port(
+			CLK			: in std_logic;
+			i_S          : in std_logic;
+			i_D0         : in std_logic_vector(N-1 downto 0);
+			i_D1         : in std_logic_vector(N-1 downto 0);
+			o_O          : out std_logic_vector(N-1 downto 0));
+	end component;
 
   -- TODO: You may add any additional signals or components your implementation 
   --       requires below this comment
+  signal s_RegData1		: std_logic_vector(31 downto 0);
+  signal s_RegData2		: std_logic_vector(31 downto 0);
+  signal s_ALUBMux		: std_logic_vector(31 downto 0);
+  signal s_ALUZero		: std_logic;
+  signal s_DMem_Rslt	: std_logic_vector(31 downto 0);
+
 
 begin
 
@@ -109,22 +136,70 @@ begin
 
   -- TODO: Implement the rest of your processor below this comment!
 
+  --Fetch Stage
   -- Fetch Logic ---
   
   
   
   
+  --Decode Stage
+  --Mux for register address to select destination as RT or RD
+  RDMux: mux2t1_N
+	generic map(5)
+	port map (
+			   CLK			=> iCLK,
+			   i_S			=> --RegDst,
+			   i_D0			=> s_Inst(20 downto 16),
+			   i_D1			=> s_Inst(15 downto 11),
+			   o_O			=> s_RegWrAddr);
   -- Register File ---
   Register_File: reg_file
 		port map(
-				CLK			=> --,
-				i_Reg1		=> --,
-				i_Reg2		=> --,
-				i_Reg_Wr	=> --,
-				i_Wr_Reg	=> --,
-				i_Wr_Data	=> --,
-				o_Data1		=> --,
-				o_Data2		=> --);
+				CLK			=> iCLK,
+				i_Reg1		=> s_Inst(25 downto 21),
+				i_Reg2		=> s_Inst(20 downto 16),
+				i_Reg_Wr	=> s_RegWr,
+				i_Wr_Reg	=> s_RegWrAddr,
+				i_Wr_Data	=> s_RegWrData,
+				o_Data1		=> s_RegData1,
+				o_Data2		=> s_RegData2);
+				
+  --Execute stage
+  --MUX to select input B of ALU as regData2 or the sign-extended immediate
+  ALUB_MUX: mux2t1_N
+	generic map(32)
+	port map (
+			  CLK			=> iCLK,
+			  i_S			=> --ALUSrc,
+			  i_D0			=> s_RegData2,
+			  i_D1			=> -- sign-extended input,
+			  o_O			=> s_ALUBMux);
+  --ALU--
+  g_ALU: alu
+	port map(
+			  CLK			=> iCLK,
+			  i_Data1		=> s_RegData1,
+			  i_Data2		=> s_ALUBMux,
+			  i_ALU_CTRL	=> --signal from ALU_COntrol module,
+			  o_Zero		=> s_ALUZero,
+			  o_ALURslt		=> oALUOut,
+			  o_Overflow	=> s_Ovfl);
+			  
+  --Memory Stage--
+  s_DMemAddr(11 downto 2)	<= oALUOut(10 downto 0);
+  s_DMemData	<= s_RegData2;
+  s_DMemWr		<= --memWrite;
+  s_DMem_Rslt	<= s_DMemOut;
+  
+  --Write Back Stage--
+  WrBackMUX: mux2t1_N
+	generic map(32)
+	port map (
+			  CLK			=> iCLK,
+			  i_S			=> --memToReg,
+			  i_D0			=> oALUOut,
+			  i_D1			=> s_DMemOut,
+			  o_O			=> s_RegWrData);
 
 
 end structure;

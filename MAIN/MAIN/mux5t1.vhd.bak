@@ -1,0 +1,20 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity mux5t1 is 
+	port( add,sub,slt,d,e 	: in std_logic_vector(31 downto 0);
+		s		: in std_logic_vector(2 downto 0);
+		aluRes		: out std_logic_vector(31 downto 0));
+end mux5t1;
+
+architecture behavior of mux5t1 is
+begin
+process (s)
+begin
+	CASE s is
+		WHEN "000" => aluRes <= ;
+		WHEN "001" => aluRes <= ;
+		WHEN "010" => aluRes <= ;
+		WHEN "011" => aluRes <= ;
+		WHEN "100" => aluRes <= ;
+		WHEN OTHERS => aluRes <= ;

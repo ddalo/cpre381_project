@@ -10,7 +10,7 @@
 --  
 --Notes            
 -- 03/3/2021 by Bruce Bitwayiki::Design created.
--- 04/07/2021 by David Dalo :: Design improved/corrected to remove the clk
+-- 04/07/2021 by David Dalo :: Design improved/corrected
 -------------------------------------------------------------------------
 
 library IEEE;

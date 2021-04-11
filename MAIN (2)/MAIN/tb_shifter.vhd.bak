@@ -76,7 +76,7 @@ begin DUT0: shifter
     wait for gCLK_HPER/2;
 	reset <= '1';
     wait for gCLK_HPER*2;
- 	reset <= '0';
+	reset <= '0';
 	wait;
   end process;
   

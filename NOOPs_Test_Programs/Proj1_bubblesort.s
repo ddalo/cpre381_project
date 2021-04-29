@@ -32,42 +32,20 @@ loop:
 
 	nop
 	nop 
-	nop
-	nop
 	
 	lw $t0, 0($t7)  				# Load numbers[j]	
-	
-	nop
-	nop 
-	nop
-	nop
-	
 	lw $t1, 4($t7) 					# Load numbers[j+1]
 	
 	nop
 	nop 
-	nop
-	nop
-	nop
-	nop
 
 	slt $t2, $t0, $t1				# If t0 < t1
 	
 	nop
 	nop 
-	nop
-	nop
-	nop
-	nop
 	
 	bne $t2, $zero, increment
-	
-	nop
-	nop
-
 	sw $t1, 0($t7) 					# Swap
-	nop
-	nop
 	sw $t0, 4($t7)
 
 increment:	
@@ -75,7 +53,6 @@ increment:
 	addi $s1, $s1, 1				# Increment t1
 	sub $s5, $s6, $s0 				# Subtract s0 from s6
 	
-	nop
 	nop
 	nop
 
@@ -89,46 +66,29 @@ increment:
 	
 print:
 	beq $t3, $t4, final				# If t3 = t4 go to final
-	
 	lw $t5, 0($s7)					# Load from numbers
-	
 	li $v0, 1					# Print the number
 	
 	nop
 	
-	move $a0, $t5
+	#move $a0, $t5
+	add $a0, $0, $t5
 	nop
 	nop
-	nop
-	nop
+	
 	syscall
-
-	nop
 	li $a0, 32					# Print space
-	nop
 	li $v0, 11
+	
 	nop
 	nop
-	nop
-	nop
+	
 	syscall
 	
-	nop
-	nop
 	addi $s7, $s7, 4				# Iterate over numbers 
-	nop
-	nop
-	nop
 	addi $t3, $t3, 1				# Increment counter
-	
-	nop
-	nop
-	nop
 	j print
 	
-	nop
-	nop
-	nop
 	nop
 
 final:	

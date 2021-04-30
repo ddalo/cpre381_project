@@ -1,0 +1,17 @@
+Mars_Modifications
+
+temp/*
+
+internal/ModelSimContainer/*
+!internal/ModelSimContainer/.gitkeep
+
+internal/QuartusWork
+
+src/*.vhd
+!src/MIPS_Processor.vhd
+!src/tb.vhd
+!src/mem.vhd
+
+.vscode/
+__pycache__/
+*.pyc

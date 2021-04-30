@@ -1,0 +1,9 @@
+This instruction is for Windows
+
+1. Make Sure Python is installed and added to the Path Variable. 
+2. Verify you have Pip
+2. Open powershell.
+3. Pip install pyinstaller
+4. Cd to the directory of the python file to convert
+5. use the command "pyinstaller --onefile <filename>.py"
+6. The command will create files if not already there, The exe will be in the dist folder

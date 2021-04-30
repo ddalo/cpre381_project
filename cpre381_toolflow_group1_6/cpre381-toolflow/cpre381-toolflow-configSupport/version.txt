@@ -1,0 +1,15 @@
+
+Version sp2021.1
+
+Release Date: 3/24/2021
+
+Release Notes:
+
+* Fixed synthesis path issues when run from U:.
+* Added synthesis log output to temp/.
+
+Known Bugs:
+
+*Pipelined Processor Simulation
+*GUI Freezes during Simulation (Becomes unresponsive)
+

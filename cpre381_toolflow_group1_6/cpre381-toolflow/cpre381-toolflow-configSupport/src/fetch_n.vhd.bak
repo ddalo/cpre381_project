@@ -1,0 +1,157 @@
+library IEEE;	
+use IEEE.std_logic_1164.all;
+
+entity fetch_n is		--fetch entity which holds all of the fetch logic blocks
+	generic(N : integer := 32);
+	port(iCLK	: in std_logic;
+	     iA  	: in std_logic_vector(25 downto 0);   --instruction address from imem
+	     oAd	: out std_logic_vector(31 downto 0);  --output address from program counter
+	     iIns	: in std_logic_vector(31 downto 0); --Sign extended instruction
+	     pcRegData	: in std_logic_vector(31 downto 0);
+	     iJ		: in std_logic; 	--jump input 1 or 0 for mux control of address addition  
+	     iJR	: in std_logic;
+	     iZ		: in std_logic;   --the zero result from the ALU block which outputs a 1 or 0
+	     iB		: in std_logic;   --branch control input which outputs 1 or 0
+	     iBne	: in std_logic;   --bne control xord with zero
+ 	     iRST	: in std_logic;   --reset
+	     iLD	: in std_logic;   --load
+	     pc4	: out std_logic_vector(31 downto 0));  --pc+4
+end fetch_n;
+		
+
+architecture structural of fetch_n is
+	component pcReg is
+  	
+  	   port (i_RST, i_WE, i_CLK 	: in std_logic;    -- reset, load=write enable, clock
+        	 i_D 			: in std_logic_vector(31 downto 0); --input address
+       		 o_Q 			: out std_logic_vector(31 downto 0)); -- output address
+	end component;
+	
+	component mux2t1_N is
+
+  	port(i_S          : in std_logic; -- selector
+       	     i_D0         : in std_logic_vector(31 downto 0);   -- input one
+       	     i_D1         : in std_logic_vector(31 downto 0);	 -- input two
+       	     o_O          : out std_logic_vector(31 downto 0)); -- output
+
+	end component;
+
+	
+	component fadderN is
+
+	port(A	: in std_logic_vector(31 downto 0);	--first value
+	     B	: in std_logic_vector(31 downto 0);	--second value
+	     C	: in std_logic;				--carry in
+	     S	: out std_logic_vector(31 downto 0);	--output/sum
+	     E	: out std_logic);			--carry out
+	end component;
+
+	component addC is
+
+	    port(
+      		 iA               : in std_logic_vector(31 downto 0);	--vector to add
+       		 iB               : in std_logic_vector(31 downto 0);	--vector constant
+      		 oA               : out std_logic_vector(31 downto 0));	--output
+	end component;
+
+	--component shiftleft is
+
+	--port(iA : in std_logic_vector(25 downto 0);	--vector in
+	     --oA : out std_logic_vector(25 downto 0));	--vector out
+	--end component;
+	
+	component andg2 is
+
+  	port(i_A          : in std_logic;   --value one
+       	i_B          : in std_logic;	--value two
+       	o_F          : out std_logic); --output
+
+	end component;
+	
+	component xorg2 is
+
+  	port(i_A          : in std_logic;
+       	     i_B          : in std_logic;
+       	     o_F          : out std_logic);
+	
+	end component;
+	--component addV is
+
+  	--port(
+       	--iA               : in std_logic_vector(27 downto 0);  --first vector
+       	--iB               : in std_logic_vector(3 downto 0);	--second vector 
+       	--oC               : out std_logic_vector(31 downto 0)); --concat output
+
+	--end component;
+signal s_N 	: std_logic_vector(31 downto 0); --the shifted jump address value
+signal s_T 	: std_logic_vector(27 downto 0); -- jump SL output 28bits wide
+signal s_X	: std_logic_vector(31 downto 0);
+signal s_B	: std_logic_vector(31 downto 0);
+signal s_Y	: std_logic_vector(31 downto 0);
+signal s_Z	: std_logic_vector(31 downto 0);
+signal s_F	: std_logic_vector(31 downto 0);
+signal s_E	: std_logic;
+signal s_C	: std_logic;
+signal s_U	: std_logic_vector(31 downto 0);
+signal s_O	: std_logic; --the anded signal 
+signal s_M	: std_logic_vector(31 downto 0);
+
+
+
+begin
+
+ 
+g_Reg1: pcReg --.
+	port MAP(i_RST => iRST,
+		 i_WE => iLD,
+		 i_CLK => iCLK,
+		 i_D => s_X,
+		 o_Q => s_Y);
+	oAd <= s_Y;
+g_Add1: addC --.
+	port MAP(iA => s_Y,
+		iB => b"00000000000000000000000000000100",
+		oA => s_Z);
+
+	
+--g_Shift1: shiftleft --jump address SL  --.
+	--port MAP(iA => s_R,
+		-- oA => s_T );
+		s_T <= iA(25 downto 0) & b"00";
+	
+--g_addV: addV --.
+
+	s_N <= s_Z(31 downto 28) & s_T;
+--g_Shift2: shiftleft --fadder SL --.
+		s_F <= iIns(29 downto 0) & b"00";
+g_Add2: fadderN --.
+	port MAP(A => s_Z,
+		 B => s_F,
+		 C => '0',
+		 S => s_U,
+		 E => s_E);
+g_Xor1: xorg2 -- xor zero to enable bne as well
+  	port MAP(i_A => iZ,
+       	         i_B => iBne,
+       	         o_F => s_C);
+g_And1: andg2 --.
+	port MAP(i_A => iB,
+		 i_B => s_C,
+		 o_F => s_O);
+g_Mux1: mux2t1_N --.pc+4/shift
+	port MAP(i_S => s_O,
+		 i_D0 => s_Z,
+		 i_D1 => s_U,
+		 o_O => s_M);
+g_Mux2: mux2t1_N  --.jump
+	port MAP(i_S => iJ,
+		 i_D0 => s_M,
+		 i_D1 => s_N,
+		 o_O => s_B);
+g_Mux3: mux2t1_N  --.jump register
+	port MAP(i_S => iJR,
+		 i_D0 => s_B,
+		 i_D1 => pcRegData,
+		 o_O => s_X);
+
+end structural;

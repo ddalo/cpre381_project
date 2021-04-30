@@ -1,0 +1,198 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_misc.all;
+use ieee.numeric_std.all;
+
+
+entity ALU_main is
+
+  port(
+        OP_A          	  : in std_logic_vector(31 downto 0);
+	OP_B          	  : in std_logic_vector(31 downto 0);
+	ALUOP          	  : in std_logic_vector(14 downto 0);
+	Overflow          : out std_logic;
+	Zero              : out std_logic;
+        result_F          : out std_logic_vector(31 downto 0));
+
+end ALU_main;
+
+
+
+architecture mixed of ALU_main is
+	
+	component invg32 is
+  	port(   i_A          : in std_logic_vector(31 downto 0);
+      		o_F          : out std_logic_vector(31 downto 0));
+
+	end component;
+	
+	
+	component mux2t1_N is
+  	generic(N : integer := 32); -- Generic of type integer for input/output data width. Default value is 32.
+  	port(
+	   
+	   	i_S          : in std_logic;
+       		i_D0         : in std_logic_vector(N-1 downto 0);
+       		i_D1         : in std_logic_vector(N-1 downto 0);
+       		o_O          : out std_logic_vector(N-1 downto 0));
+
+	end component;	
+
+	component xorg32 is
+
+  	port(   i_A          : in std_logic_vector(31 downto 0);
+       		i_B          : in std_logic_vector(31 downto 0);
+       		o_F          : out std_logic_vector(31 downto 0));
+
+	end component;
+	
+
+	component org32 is
+
+  	port(   i_A          : in std_logic_vector(31 downto 0);
+       		i_B          : in std_logic_vector(31 downto 0);
+       		o_F          : out std_logic_vector(31 downto 0));
+
+	end component;
+
+	component andg32 is
+
+  	port(i_A          : in std_logic_vector(31 downto 0);
+       	     i_B          : in std_logic_vector(31 downto 0);
+       	     o_F          : out std_logic_vector(31 downto 0));
+
+	end component;
+
+
+	component AddSub is
+	generic(N : integer := 32);
+	port(   A1          : in std_logic_vector(N-1 downto 0);
+    		B1       : in std_logic_vector(N-1 downto 0);
+     		nAS   : in std_logic;
+     		o_F        : out std_logic_vector(N-1 downto 0);
+     		o_C        : out std_logic);
+
+	end component;
+
+
+	component slt is
+ 	 generic(N : integer := 32);
+  	port(          
+       		iA               : in std_logic; -- operand A msb
+       		iB               : in std_logic;  --  operand B msb
+       		iC               : in std_logic;  --  carry
+       		oC               : out std_logic_vector(N-1 downto 0));
+
+	end component;
+
+
+	component shifter is
+		port(
+			i_Input		: in std_logic_vector(31 downto 0);
+			i_ShiftAmt	: in std_logic_vector (4 downto 0);
+			i_Arithmetic	: in std_logic;						-- 0 == logical and 1 == arithmetic shift
+			i_LeftRight	: in std_logic;						-- 0 == left shift and 1 == right shift
+			o_Output	: out std_logic_vector(31 downto 0));
+	end component;
+	
+
+	component aluMux is 
+		port(   add,sub,slt,or1,and1,xor1,shift,beq,bne 	: in std_logic_vector(31 downto 0);
+			s		: in std_logic_vector(4 downto 0);
+			aluRes		: out std_logic_vector(31 downto 0));
+	end component;
+
+signal s_nA :std_logic_vector(31 downto 0);
+signal s_nB :std_logic_vector(31 downto 0);
+signal s_Asel :std_logic_vector(31 downto 0);
+signal s_Bsel :std_logic_vector(31 downto 0);
+signal s_XOR :std_logic_vector(31 downto 0);
+signal s_OR :std_logic_vector(31 downto 0);
+signal s_AND :std_logic_vector(31 downto 0);
+signal s_Shifter :std_logic_vector(31 downto 0);
+signal s_ASresult :std_logic_vector(31 downto 0);
+signal s_carry :std_logic;
+signal s_SLT :std_logic_vector(31 downto 0);
+signal s_BEQ :std_logic_vector(31 downto 0);
+signal s_BNE :std_logic_vector(31 downto 0);
+
+begin
+g_Asel: 
+	invg32
+	port MAP(i_A => OP_A,
+		 o_F => s_nA);
+  	m1: mux2t1_N
+	port MAP(i_S => ALUOP(14),  
+       		 i_D0 => OP_A,
+       		 i_D1 => s_nA,
+       		 o_O => s_Asel);
+
+g_Bsel: 
+	invg32
+	port MAP(i_A => OP_B,
+		 o_F => s_nB);
+  	m2: mux2t1_N
+	port MAP(i_S => ALUOP(13), 
+       		 i_D0 => OP_B,
+       		 i_D1 => s_nB,
+       		 o_O => s_Bsel);
+g_Shifter: 
+	Shifter
+	port MAP(i_Input => OP_B, 
+		 i_ShiftAmt =>ALUOP(9 downto 5),
+		 i_Arithmetic => ALUOP(10), 
+		 i_LeftRight => ALUOP(11), 
+		 o_Output => s_Shifter); 	
+g_AddSub: 
+	AddSub
+	port MAP(A1 => s_Asel,
+		 B1 => s_Bsel,
+		 nAS => ALUOP(12),
+		 o_F => s_ASresult,
+		 o_C => s_carry);
+g_OR: 
+	org32
+	port MAP(i_A => s_Asel,
+		 i_B => s_Bsel,
+		 o_F => s_OR);
+
+g_AND: 
+	andg32
+	port MAP(i_A => s_Asel,
+		 i_B => s_Bsel,
+		 o_F => s_AND);
+g_SLT: 
+	slt
+	port MAP(iA => s_Asel(31), -- operand A msb
+		 iB => s_Bsel(31), -- operand B msb
+                 iC => s_carry,  -- subtraction carry bit
+		 oC => s_SLT); --31 zeros and MSB from asresult to LSB of slt
+g_XOR: 
+	xorg32
+	port MAP(i_A => OP_A,
+		 i_B => OP_B,
+		 o_F => s_XOR);
+
+g_BEQ:
+	s_BEQ <= "0000000000000000000000000000000" & not(s_ASresult(31) or s_ASresult(30) or s_ASresult(29) or s_ASresult(28) or s_ASresult(27) or s_ASresult(26) or s_ASresult(25) or s_ASresult(24) or s_ASresult(23) or s_ASresult(22) or s_ASresult(21) or s_ASresult(20) or s_ASresult(19) or s_ASresult(18) or s_ASresult(17) or s_ASresult(16) or s_ASresult(15) or s_ASresult(14) or s_ASresult(13) or s_ASresult(12) or s_ASresult(11) or s_ASresult(10) or s_ASresult(9) or s_ASresult(8) or s_ASresult(7) or s_ASresult(6) or s_ASresult(5) or s_ASresult(4) or s_ASresult(3) or s_ASresult(2) or s_ASresult(1) or s_ASresult(0));
+g_BNE:
+	s_BEQ <= "0000000000000000000000000000000" & (s_ASresult(31) or s_ASresult(30) or s_ASresult(29) or s_ASresult(28) or s_ASresult(27) or s_ASresult(26) or s_ASresult(25) or s_ASresult(24) or s_ASresult(23) or s_ASresult(22) or s_ASresult(21) or s_ASresult(20) or s_ASresult(19) or s_ASresult(18) or s_ASresult(17) or s_ASresult(16) or s_ASresult(15) or s_ASresult(14) or s_ASresult(13) or s_ASresult(12) or s_ASresult(11) or s_ASresult(10) or s_ASresult(9) or s_ASresult(8) or s_ASresult(7) or s_ASresult(6) or s_ASresult(5) or s_ASresult(4) or s_ASresult(3) or s_ASresult(2) or s_ASresult(1) or s_ASresult(0));
+g_MUX: 
+	aluMux
+	port MAP(add => s_ASresult,
+		 sub => s_ASresult,
+		 slt => s_SLT,
+		 or1 => s_OR,
+		 and1 => s_AND,
+		 xor1 => s_XOR,
+		 shift => s_Shifter,
+		 beq => s_BEQ,
+		 bne => s_BNE,
+		 s => ALUOP(4 downto 0),
+		 aluRes => result_F);
+g_ZERO:
+	Zero <= not(s_ASresult(31) or s_ASresult(30) or s_ASresult(29) or s_ASresult(28) or s_ASresult(27) or s_ASresult(26) or s_ASresult(25) or s_ASresult(24) or s_ASresult(23) or s_ASresult(22) or s_ASresult(21) or s_ASresult(20) or s_ASresult(19) or s_ASresult(18) or s_ASresult(17) or s_ASresult(16) or s_ASresult(15) or s_ASresult(14) or s_ASresult(13) or s_ASresult(12) or s_ASresult(11) or s_ASresult(10) or s_ASresult(9) or s_ASresult(8) or s_ASresult(7) or s_ASresult(6) or s_ASresult(5) or s_ASresult(4) or s_ASresult(3) or s_ASresult(2) or s_ASresult(1) or s_ASresult(0));
+
+end mixed;
+ 
+	

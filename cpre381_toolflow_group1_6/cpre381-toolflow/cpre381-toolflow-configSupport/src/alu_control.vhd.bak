@@ -1,0 +1,78 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity alu_control is
+	port(	alu_ctrl	: in std_logic_vector(4 downto 0);
+	    	funct_code	: in std_logic_vector(5 downto 0);
+	    	shamt		: in std_logic_vector(4 downto 0);
+		jrEnable	: out std_logic;
+		o_aluctrl	: out std_logic_vector(14 downto 0));  --top 2 invert bits 14-13, add.sub12/lr11/arithmetic10->0
+
+end alu_control;
+
+architecture behavior of alu_control is
+begin
+OC : process(alu_ctrl,funct_code, shamt)
+begin
+	case(alu_ctrl) is 
+		when "00000" =>
+			if funct_code = "100000" then	--add
+				o_aluctrl <= "00000" & shamt & "00010";
+				jrEnable <= '0';
+			elsif funct_code = "100001" then --addu
+				o_aluctrl <= "00000" & shamt & "00010";
+				jrEnable <= '0';
+			elsif funct_code = "100100" then  --and
+				o_aluctrl <= "00000" & shamt & "10111";
+				jrEnable <= '0';
+			elsif funct_code = "100111" then  --nor
+				o_aluctrl <= "11000" & shamt & "10111";
+				jrEnable <= '0';
+			elsif funct_code = "100110" then --xor
+				o_aluctrl <= "00000" & shamt & "01000";
+				jrEnable <= '0';
+			elsif funct_code = "100101" then --or
+				o_aluctrl <= "00000" & shamt & "00001";
+				jrEnable <= '0';
+			elsif funct_code = "101010" then --slt
+				o_aluctrl <= "00100" & shamt & "00111";
+				jrEnable <= '0';
+			elsif funct_code = "000000" then --sll
+				o_aluctrl <= "00000" & shamt & "01001";
+				jrEnable <= '0';
+			elsif funct_code = "000010" then --srl
+				o_aluctrl <= "00010" & shamt & "01001";
+				jrEnable <= '0';
+			elsif funct_code = "000011" then --sra
+				o_aluctrl <= "00011" & shamt & "01001";
+				jrEnable <= '0';
+			elsif funct_code = "100010" then --sub
+				o_aluctrl <= "00100" & shamt & "00110";
+				jrEnable <= '0';
+			elsif funct_code = "100011" then --subu
+				o_aluctrl <= "00100" & shamt & "00110";
+				jrEnable <= '0';
+			elsif funct_code = "001000" then --jump register
+				o_aluctrl <= "00000" & shamt & "10100";
+				jrEnable <= '1';
+			else
+				o_aluctrl <= "000000000000000";
+				jrEnable <= '0';
+			end if;
+
+		when "00110" => 
+			o_aluctrl <= "00100" & shamt & alu_ctrl;
+			jrEnable <= '0';
+		when "00111" => 
+			o_aluctrl <= "00100" & shamt & alu_ctrl;
+			jrEnable <= '0';
+		
+		when others =>
+			o_aluctrl <= "00000" & shamt & alu_ctrl;
+			jrEnable <= '0';
+
+
+		end case;
+	end process;
+end behavior;
+		
